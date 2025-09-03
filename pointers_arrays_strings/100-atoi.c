@@ -2,64 +2,83 @@
 #include <limits.h>
 
 /**
- * _atoi - converts a string to an integer
- * @s: pointer to the string
- *
- * Description:
- * Parses the first contiguous digit sequence in the string.
- * Considers all preceding '+' and '-' signs before the first digit.
- * Clamps on overflow to INT_MAX / INT_MIN and returns 0 if no digits.
- *
- * Return: the converted integer (or 0 if no digits are found)
+ * is_digit - check if c is '0'..'9'
+ * @c: char
+ * Return: 1 if digit else 0
+ */
+static int is_digit(char c)
+{
+	return (c >= '0' && c <= '9');
+}
+
+/**
+ * acc_pos - accumulate positive with overflow clamp
+ * @r: current (>= 0)
+ * @d: digit 0..9
+ * Return: INT_MAX if overflow else new value
+ */
+static int acc_pos(int r, int d)
+{
+	if (r > (INT_MAX - d) / 10)
+		return (INT_MAX);
+	return (r * 10 + d);
+}
+
+/**
+ * acc_neg - accumulate negative with underflow clamp
+ * @r: current (<= 0)
+ * @d: digit 0..9
+ * Return: INT_MIN if underflow else new value
+ */
+static int acc_neg(int r, int d)
+{
+	if (r < (INT_MIN + d) / 10)
+		return (INT_MIN);
+	return (r * 10 - d);
+}
+
+/**
+ * _atoi - convert string to int
+ * @s: input string
+ * Return: converted int or 0 if no digits
  */
 int _atoi(char *s)
 {
-	int sign = 1;
-	int result = 0;
-	int started = 0;
-	int d;
+	int sign = 1, r = 0;
 
-	if (s == 0)
+	if (!s)
 		return (0);
 
-	/* Move until the first digit; count signs on the way */
-	while (*s && !(*s >= '0' && *s <= '9'))
+	/* skip to first digit, tallying '-' signs */
+	while (*s && !is_digit(*s))
 	{
 		if (*s == '-')
 			sign = -sign;
-		/* '+' does nothing */
 		s++;
 	}
 
-	/* Build number; stop at the first non-digit after starting */
-	while (*s && (*s >= '0' && *s <= '9'))
+	if (!*s) /* no digits at all */
+		return (0);
+
+	/* parse contiguous digits with clamping */
+	while (*s && is_digit(*s))
 	{
-		d = *s - '0';
-		started = 1;
+		int d = *s - '0';
 
 		if (sign == 1)
 		{
-			/* Check overflow before result * 10 + d */
-			if (result > (INT_MAX - d) / 10)
+			r = acc_pos(r, d);
+			if (r == INT_MAX)
 				return (INT_MAX);
-			result = (result * 10) + d;
 		}
 		else
 		{
-			/*
-			 * Accumulate as negative to reach INT_MIN safely:
-			 * result = result * 10 - d; check underflow first.
-			 */
-			if (result < (INT_MIN + d) / 10)
+			r = acc_neg(r, d);
+			if (r == INT_MIN)
 				return (INT_MIN);
-			result = (result * 10) - d;
 		}
 		s++;
 	}
-
-	if (!started)
-		return (0);
-
-	return (result);
+	return (r);
 }
 
