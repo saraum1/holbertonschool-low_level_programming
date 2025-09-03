@@ -1,38 +1,65 @@
 #include "main.h"
+#include <limits.h>
 
 /**
  * _atoi - converts a string to an integer
- * @s: input string
+ * @s: pointer to the string
  *
- * Return: converted integer (0 if no numbers)
+ * Description:
+ * Parses the first contiguous digit sequence in the string.
+ * Considers all preceding '+' and '-' signs before the first digit.
+ * Clamps on overflow to INT_MAX / INT_MIN and returns 0 if no digits.
+ *
+ * Return: the converted integer (or 0 if no digits are found)
  */
 int _atoi(char *s)
 {
-	int i = 0, sign = 1;
-	int acc = 0;
+	int sign = 1;
+	int result = 0;
+	int started = 0;
+	int d;
 
-	while (s[i] != '\0' && (s[i] < '0' || s[i] > '9'))
+	if (s == 0)
+		return (0);
+
+	/* Move until the first digit; count signs on the way */
+	while (*s && !(*s >= '0' && *s <= '9'))
 	{
-		if (s[i] == '-')
-			sign *= -1;
-		else if (s[i] == '+')
-			;
-		else if (s[i] == ' ')
-			;
-		i++;
+		if (*s == '-')
+			sign = -sign;
+		/* '+' does nothing */
+		s++;
 	}
 
-	while (s[i] >= '0' && s[i] <= '9')
+	/* Build number; stop at the first non-digit after starting */
+	while (*s && (*s >= '0' && *s <= '9'))
 	{
-		int d = s[i] - '0';
+		d = *s - '0';
+		started = 1;
 
-		if (sign > 0)
-			acc = acc * 10 + d;
+		if (sign == 1)
+		{
+			/* Check overflow before result * 10 + d */
+			if (result > (INT_MAX - d) / 10)
+				return (INT_MAX);
+			result = (result * 10) + d;
+		}
 		else
-			acc = acc * 10 - d;
-
-		i++;
+		{
+			/*
+			 * Accumulate as negative to reach INT_MIN safely:
+			 * result = result * 10 - d; check underflow first.
+			 */
+			if (result < (INT_MIN + d) / 10)
+				return (INT_MIN);
+			result = (result * 10) - d;
+		}
+		s++;
 	}
-	return (acc);
+
+	if (!started)
+		return (0);
+
+	return (result);
 }
 
