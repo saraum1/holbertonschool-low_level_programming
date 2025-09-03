@@ -5,7 +5,7 @@
  * _atoi - converts a string to an integer
  * @s: input string
  *
- * Return: converted integer, or 0 if no numbers
+ * Return: converted integer (0 if no numbers)
  */
 int _atoi(char *s)
 {
@@ -23,7 +23,6 @@ int _atoi(char *s)
 		if (!started)
 			i++;
 	}
-
 	if (!started)
 		return (0);
 
