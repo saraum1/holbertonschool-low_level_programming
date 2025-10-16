@@ -33,8 +33,18 @@ void copy_file(const char *file_from, const char *file_to)
 		error_exit(99, "Error: Can't write to %s\n", file_to);
 	}
 
-	while ((r = read(fd_from, buf, 1024)) > 0)
+	while (1)
 	{
+		r = read(fd_from, buf, 1024);
+		if (r == -1)
+		{
+			close(fd_from);
+			close(fd_to);
+			error_exit(98, "Error: Can't read from file %s\n", file_from);
+		}
+		if (r == 0)
+			break;
+
 		w = write(fd_to, buf, r);
 		if (w == -1 || w != r)
 		{
@@ -43,9 +53,6 @@ void copy_file(const char *file_from, const char *file_to)
 			error_exit(99, "Error: Can't write to %s\n", file_to);
 		}
 	}
-
-	if (r == -1)
-		error_exit(98, "Error: Can't read from file %s\n", file_from);
 
 	if (close(fd_from) == -1)
 	{
@@ -77,3 +84,4 @@ int main(int argc, char *argv[])
 	copy_file(argv[1], argv[2]);
 	return (0);
 }
+
