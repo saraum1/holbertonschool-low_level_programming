@@ -1,10 +1,14 @@
 #include "main.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 /**
  * error_exit - prints error message and exits
  * @code: exit code
  * @msg: message format
- * @arg: string argument (file name or fd)
+ * @arg: string argument (file name)
  */
 void error_exit(int code, const char *msg, const char *arg)
 {
@@ -14,7 +18,7 @@ void error_exit(int code, const char *msg, const char *arg)
 
 /**
  * close_fd - safely closes a file descriptor
- * @fd: file descriptor
+ * @fd: file descriptor to close
  */
 void close_fd(int fd)
 {
@@ -26,15 +30,15 @@ void close_fd(int fd)
 }
 
 /**
- * copy_file - handles reading/writing between files
- * @file_from: source file
- * @file_to: destination file
+ * copy_file - copies content from one file to another
+ * @file_from: source file name
+ * @file_to: destination file name
  */
 void copy_file(const char *file_from, const char *file_to)
 {
 	int fd_from, fd_to;
-	ssize_t r, w;
-	char buf[1024];
+	ssize_t r_bytes, w_bytes;
+	char buffer[1024];
 
 	fd_from = open(file_from, O_RDONLY);
 	if (fd_from == -1)
@@ -47,10 +51,10 @@ void copy_file(const char *file_from, const char *file_to)
 		error_exit(99, "Error: Can't write to %s\n", file_to);
 	}
 
-	while ((r = read(fd_from, buf, 1024)) > 0)
+	while ((r_bytes = read(fd_from, buffer, 1024)) > 0)
 	{
-		w = write(fd_to, buf, r);
-		if (w == -1 || w != r)
+		w_bytes = write(fd_to, buffer, r_bytes);
+		if (w_bytes != r_bytes)
 		{
 			close_fd(fd_from);
 			close_fd(fd_to);
@@ -58,7 +62,7 @@ void copy_file(const char *file_from, const char *file_to)
 		}
 	}
 
-	if (r == -1)
+	if (r_bytes == -1)
 	{
 		close_fd(fd_from);
 		close_fd(fd_to);
@@ -70,9 +74,9 @@ void copy_file(const char *file_from, const char *file_to)
 }
 
 /**
- * main - entry point
- * @argc: argument count
- * @argv: argument vector
+ * main - copies the content of a file to another file
+ * @argc: number of arguments
+ * @argv: array of arguments
  * Return: 0 on success
  */
 int main(int argc, char *argv[])
@@ -82,6 +86,7 @@ int main(int argc, char *argv[])
 		dprintf(STDERR_FILENO, "Usage: cp file_from file_to\n");
 		exit(97);
 	}
+
 	copy_file(argv[1], argv[2]);
 	return (0);
 }
