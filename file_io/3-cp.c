@@ -26,6 +26,37 @@ void close_fd(int fd)
 }
 
 /**
+ * transfer_data - reads from one fd and writes to another
+ * @fd_from: source file descriptor
+ * @fd_to: destination file descriptor
+ * @file_from: source file name
+ * @file_to: destination file name
+ */
+void transfer_data(int fd_from, int fd_to,
+		   const char *file_from, const char *file_to)
+{
+	ssize_t r, w;
+	char buf[1024];
+
+	while ((r = read(fd_from, buf, 1024)) > 0)
+	{
+		w = write(fd_to, buf, r);
+		if (w == -1 || w != r)
+		{
+			close_fd(fd_from);
+			close_fd(fd_to);
+			error_exit(99, "Error: Can't write to %s\n", file_to);
+		}
+	}
+	if (r == -1)
+	{
+		close_fd(fd_from);
+		close_fd(fd_to);
+		error_exit(98, "Error: Can't read from file %s\n", file_from);
+	}
+}
+
+/**
  * copy_file - copies content of one file to another
  * @file_from: source file name
  * @file_to: destination file name
@@ -33,8 +64,6 @@ void close_fd(int fd)
 void copy_file(const char *file_from, const char *file_to)
 {
 	int fd_from, fd_to;
-	ssize_t r, w;
-	char buf[1024];
 
 	fd_from = open(file_from, O_RDONLY);
 	if (fd_from == -1)
@@ -47,24 +76,7 @@ void copy_file(const char *file_from, const char *file_to)
 		error_exit(99, "Error: Can't write to %s\n", file_to);
 	}
 
-	while ((r = read(fd_from, buf, 1024)) > 0)
-	{
-		w = write(fd_to, buf, r);
-		if (w == -1 || w != r)
-		{
-			close_fd(fd_from);
-			close_fd(fd_to);
-			error_exit(99, "Error: Can't write to %s\n", file_to);
-		}
-	}
-
-	if (r == -1)
-	{
-		close_fd(fd_from);
-		close_fd(fd_to);
-		error_exit(98, "Error: Can't read from file %s\n", file_from);
-	}
-
+	transfer_data(fd_from, fd_to, file_from, file_to);
 	close_fd(fd_from);
 	close_fd(fd_to);
 }
