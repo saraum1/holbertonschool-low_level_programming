@@ -13,13 +13,22 @@ void error_exit(int code, const char *msg, const char *arg)
 }
 
 /**
+ * close_fd - closes a file descriptor with error handling
+ * @fd: file descriptor
+ */
+void close_fd(int fd)
+{
+	if (close(fd) == -1)
+	{
+		dprintf(STDERR_FILENO, "Error: Can't close fd %d\n", fd);
+		exit(100);
+	}
+}
+
+/**
  * copy_file - copies content of one file to another
  * @file_from: source file name
  * @file_to: destination file name
- *
- * Note:
- * Read once before opening destination to ensure
- * read-failure returns 98 even if file_to is invalid.
  */
 void copy_file(const char *file_from, const char *file_to)
 {
@@ -31,53 +40,33 @@ void copy_file(const char *file_from, const char *file_to)
 	if (fd_from == -1)
 		error_exit(98, "Error: Can't read from file %s\n", file_from);
 
-	/* First read to validate readability before touching file_to */
-	r = read(fd_from, buf, 1024);
-	if (r == -1)
-	{
-		close(fd_from);
-		error_exit(98, "Error: Can't read from file %s\n", file_from);
-	}
-
 	fd_to = open(file_to, O_WRONLY | O_CREAT | O_TRUNC, 0664);
 	if (fd_to == -1)
 	{
-		close(fd_from);
+		close_fd(fd_from);
 		error_exit(99, "Error: Can't write to %s\n", file_to);
 	}
 
-	/* Write the first block (if any), then loop */
-	while (r > 0)
+	while ((r = read(fd_from, buf, 1024)) > 0)
 	{
 		w = write(fd_to, buf, r);
 		if (w == -1 || w != r)
 		{
-			close(fd_from);
-			close(fd_to);
+			close_fd(fd_from);
+			close_fd(fd_to);
 			error_exit(99, "Error: Can't write to %s\n", file_to);
 		}
-
-		r = read(fd_from, buf, 1024);
-		if (r == -1)
-		{
-			close(fd_from);
-			close(fd_to);
-			error_exit(98, "Error: Can't read from file %s\n", file_from);
-		}
 	}
 
-	if (close(fd_from) == -1)
+	if (r == -1)
 	{
-		dprintf(STDERR_FILENO,
-			"Error: Can't close fd %d\n", fd_from);
-		exit(100);
+		close_fd(fd_from);
+		close_fd(fd_to);
+		error_exit(98, "Error: Can't read from file %s\n", file_from);
 	}
-	if (close(fd_to) == -1)
-	{
-		dprintf(STDERR_FILENO,
-			"Error: Can't close fd %d\n", fd_to);
-		exit(100);
-	}
+
+	close_fd(fd_from);
+	close_fd(fd_to);
 }
 
 /**
@@ -91,8 +80,7 @@ int main(int argc, char *argv[])
 {
 	if (argc != 3)
 	{
-		dprintf(STDERR_FILENO,
-			"Usage: cp file_from file_to\n");
+		dprintf(STDERR_FILENO, "Usage: cp file_from file_to\n");
 		exit(97);
 	}
 
