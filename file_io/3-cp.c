@@ -13,7 +13,7 @@ void error_exit(int code, const char *msg, const char *arg)
 }
 
 /**
- * close_fd - closes file descriptor safely
+ * close_fd - safely closes a file descriptor
  * @fd: file descriptor
  */
 void close_fd(int fd)
@@ -26,9 +26,9 @@ void close_fd(int fd)
 }
 
 /**
- * copy_file - copies content from one file to another
- * @file_from: source file name
- * @file_to: destination file name
+ * copy_file - handles reading/writing between files
+ * @file_from: source file
+ * @file_to: destination file
  */
 void copy_file(const char *file_from, const char *file_to)
 {
@@ -47,18 +47,8 @@ void copy_file(const char *file_from, const char *file_to)
 		error_exit(99, "Error: Can't write to %s\n", file_to);
 	}
 
-	while (1)
+	while ((r = read(fd_from, buf, 1024)) > 0)
 	{
-		r = read(fd_from, buf, 1024);
-		if (r == -1)
-		{
-			close_fd(fd_from);
-			close_fd(fd_to);
-			error_exit(98, "Error: Can't read from file %s\n", file_from);
-		}
-		if (r == 0)
-			break;
-
 		w = write(fd_to, buf, r);
 		if (w == -1 || w != r)
 		{
@@ -68,12 +58,19 @@ void copy_file(const char *file_from, const char *file_to)
 		}
 	}
 
+	if (r == -1)
+	{
+		close_fd(fd_from);
+		close_fd(fd_to);
+		error_exit(98, "Error: Can't read from file %s\n", file_from);
+	}
+
 	close_fd(fd_from);
 	close_fd(fd_to);
 }
 
 /**
- * main - validates arguments and calls copy_file
+ * main - entry point
  * @argc: argument count
  * @argv: argument vector
  * Return: 0 on success
